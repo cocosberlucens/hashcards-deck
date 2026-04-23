@@ -121,3 +121,16 @@ shape tuple. For a (5, 3) matrix: axis=0 removes dimension 0 (the 5 rows)
 leaving shape (3,) — one value per column. axis=1 removes dimension 1
 (the 3 columns) leaving shape (5,) — one value per row. The axis number
 IS the index into the shape tuple that gets deleted.
+
+<!-- Bite 0.3: NumPy Arrays — The Paradigm Shift — 2026-04-23 -->
+
+Q: What does Pearson correlation measure that cosine similarity misses?
+A: Pearson is cosine similarity computed on *mean-centered* vectors:
+$\rho = \frac{\tilde{\mathbf{a}} \cdot \tilde{\mathbf{b}}}{\|\tilde{\mathbf{a}}\| \|\tilde{\mathbf{b}}\|}$
+where $\tilde{\mathbf{v}} = \mathbf{v} - \bar{v}$. Cosine similarity sees the
+absolute directions of $\mathbf{a}$ and $\mathbf{b}$ in feature space; Pearson
+sees the directions of their *deviations from the mean*. So two vectors with very
+different absolute values but identical fluctuation patterns have $\rho = 1$ but
+lower cosine similarity. Pearson captures "co-fluctuation" — linear relationship
+between variables — which is why it's the standard measure of statistical
+correlation; cosine captures "shape similarity" without de-trending.
