@@ -140,15 +140,14 @@ boolean row filters, and row slices often return copies — "often" being the ke
 word. This unpredictability is why `.loc`-for-assignment and `.copy()`-for-independence
 are mandatory disciplines.
 
-Q: Why does `df[df['age'] > 65]['cost'] = 0` trigger SettingWithCopyWarning — and why might it silently fail?
-A: That line is actually TWO operations: first `df[df['age'] > 65]` (boolean row
-filter → usually a copy), then `['cost'] = 0` (assignment on the intermediate).
-The warning fires because Pandas can't tell whether you intended to modify df or
-the short-lived intermediate. If the intermediate is a copy, your assignment writes
-to an object that gets garbage-collected — df is untouched, your "fix" did nothing,
-and no error was raised. The correct pattern merges the two operations into one
-`.loc` call: `df.loc[df['age'] > 65, 'cost'] = 0`, which Pandas guarantees operates
-on df.
+Q: Why is `df[df['age'] > 65]['cost'] = 0` a bug, even when it raises no error?
+A: That line is actually TWO operations: first `df[df['age'] > 65]` returns a
+temporary intermediate, then `['cost'] = 0` assigns into that intermediate —
+not into df. Under pre-3.0 Pandas this triggered SettingWithCopyWarning
+(removed in Pandas 3.0). Under 3.0's default Copy-on-Write the assignment
+silently mutates a short-lived copy and df is untouched: no warning, no error,
+no change to your data. Either way the fix is the same: merge into one `.loc`
+call: `df.loc[df['age'] > 65, 'cost'] = 0`, which Pandas guarantees operates on df.
 
 Q: What are the three safe patterns for modifying a DataFrame without hitting view/copy ambiguity?
 A: (1) Use `.loc[row_selector, col_selector] = value` for any assignment — both row
@@ -159,13 +158,12 @@ and column expressed in one step, which Pandas guarantees operates on the origin
 returns a new DataFrame, ideal for chaining. Combined rule: read with any method,
 write with `.loc`, isolate with `.copy()`, chain with `.assign()`.
 
-Q: What does Pandas' Copy-on-Write (CoW) mode change about the view/copy story?
-A: CoW makes every indexing operation *behave* like it returned a copy — but
-delays allocating the actual copy until you attempt to mutate. Reads stay free
-(shared memory underneath); writes transparently trigger a copy before mutation,
-so the source is never affected by modifications to derived objects. Result:
-no more SettingWithCopyWarning, no more guessing whether a slice is a view or
-copy, predictable behavior across all operations. Opt-in as of Pandas 2.x
-(`pd.options.mode.copy_on_write = True`), default in 3.0. Tradeoff: in-place
-modifications must be explicit via `.loc`, making intent clearer but code
-slightly more verbose.
+Q: What does Pandas' Copy-on-Write (CoW) change about the view/copy story?
+A: CoW makes every indexing operation behave like it returned a copy, but
+delays the actual allocation until you mutate. Reads stay free (shared memory);
+writes transparently trigger a copy before mutation, so derived objects never
+affect the source. The view/copy ambiguity that motivated SettingWithCopyWarning
+is gone — the warning itself was removed in Pandas 3.0 (January 2026), where
+CoW became default. In 2.x it's opt-in via `pd.options.mode.copy_on_write = True`.
+Tradeoff: in-place modifications must be explicit via `.loc`, making intent
+clearer but code slightly more verbose.
