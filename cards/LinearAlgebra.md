@@ -187,3 +187,19 @@ is unambiguous from context, math papers omit the limits — just $\sum_i x_i$ o
 $\sum x_i$; (3) the upper limit is INCLUSIVE (unlike Python's `range(n)`, which
 stops at $n-1$). Building block of definitions like $\|\mathbf{v}\| = \sqrt{\sum_i v_i^2}$
 and $\mathbf{a} \cdot \mathbf{b} = \sum_i a_i b_i$.
+
+<!-- Bite 1: Vectors & Arrays — Notation backfill: 2026-04-28 -->
+
+Q: Why are vectors typeset bold ($\mathbf{v}$) while their components ($v_i$) are not?
+A: Convention: bold uppercase for matrices ($\mathbf{A}$), bold lowercase for
+vectors ($\mathbf{v}$), italic non-bold for scalars and individual components
+($v_i$, $\theta$, $n$). The visual distinction is critical when the same letter
+denotes both: $v_i$ is the $i$-th scalar component of vector $\mathbf{v}$. So in
+$\mathbf{a} \cdot \mathbf{b} = \sum_i a_i b_i$, boldness on the left signals
+"whole vectors combining into a scalar"; non-bold on the right signals
+"individual numbers being summed." Variants you'll see: arrow notation
+$\vec{v}$ (more common in physics texts and on chalkboards where bold is hard);
+blackboard bold for sets ($\mathbb{R}^n$, $\mathbb{Z}$); calligraphic for spaces
+or sets ($\mathcal{X}$, $\mathcal{N}$). Some ML papers are sloppy and drop the
+bold — usually no real ambiguity, but it's a paper-quality smell, not a
+notation choice you should imitate.

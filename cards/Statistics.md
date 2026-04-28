@@ -51,3 +51,43 @@ the *sample* estimate computed from observed data — the same distinction as $\
 vs $\bar{x}$ for means. Caveat: $\rho$ is overloaded across math — it also denotes
 density (in physics/probability), spectral radius (linear algebra), and the rank
 function (matroid theory). Statistical context disambiguates.
+
+<!-- Bite 1: Vectors & Arrays — The ML Perspective — 2026-04-28 -->
+
+Q: What separates continuous from discrete numeric data, and why does the distinction shape what's analyzable?
+A: Continuous data can take any value within a range (with arbitrary precision in
+principle): cost in dollars and cents, body temperature, time-to-event. Discrete
+data takes only specific countable values, typically integers: number of
+procedures, number of admissions, length of stay in whole days. The distinction
+is operational: continuous variables admit means, standard deviations, and
+density-based plots (PDFs, KDEs) without controversy; discrete variables are at
+home with PMFs, counts, and stem plots. The line blurs in practice — "age in
+years" is recorded discretely but treated continuously without harm. Honest test:
+can the value lie strictly between two recorded values, and does that "between"
+mean something? If yes, treat it as continuous; if not (admissions, ICD codes),
+discrete is more faithful.
+
+Q: How do binary, ordinal, and nominal categorical variables differ, and what operations does each admit?
+A: Binary has exactly two categories — admitted/not, M/F, readmit Y/N. Numerically
+encoded as 0/1; both order and counts are valid. Ordinal has ordered categories
+where the order is meaningful but the SPACING is not — severity (Low/Med/High),
+satisfaction (1–5 stars). You can sort and take medians, but "5 is twice 2.5" is
+unwarranted because the gaps between adjacent levels need not be equal. Nominal
+has unordered categories — diagnosis code, ZIP, blood type, insurance type. Only
+counts and mode are valid; sort order is arbitrary. The hierarchy of permitted
+operations runs nominal (mode, counts) → ordinal (+ sort, median, percentiles)
+→ numeric (+ arithmetic, mean, std). Each level adds operations the simpler one
+lacks, and ML pipelines that ignore this hierarchy silently produce nonsense.
+
+Q: Why is `np.mean(zip_codes)` syntactically valid but semantically broken?
+A: ZIP codes 10001 and 94102 are stored as integers because they're labels that
+happen to be written with digits — the number is an identifier, not a measurement.
+Computing 52051.5 as the "mean ZIP" produces no actual location: there is no
+"between" relationship that would make the average a halfway point on any
+meaningful scale. This generalizes to ANY nominal categorical variable encoded
+numerically: diagnosis codes, customer IDs, gender as 0/1, severity stored
+as 1/2/3/4 if you forget it's ordinal. NumPy will silently do arithmetic on any
+numeric dtype — but the dtype tells you nothing about whether the operation is
+meaningful. Whether arithmetic makes sense is a *domain* property (measurement
+scale), not a Python type property. Always classify columns by measurement scale
+before letting any aggregation run on them.
