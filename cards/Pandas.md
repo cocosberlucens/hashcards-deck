@@ -167,3 +167,32 @@ is gone — the warning itself was removed in Pandas 3.0 (January 2026), where
 CoW became default. In 2.x it's opt-in via `pd.options.mode.copy_on_write = True`.
 Tradeoff: in-place modifications must be explicit via `.loc`, making intent
 clearer but code slightly more verbose.
+
+<!-- Bite 3: Aggregation & Summary Statistics — 2026-04-28 -->
+
+Q: What does `df.groupby('dept').mean()` actually do under the hood, and why is the GroupBy object lazy?
+A: Three steps in order: SPLIT — partition rows into groups by unique values of
+the key column (one group per department); APPLY — run the aggregation function
+on each group's values independently; COMBINE — assemble the per-group results
+back into a single DataFrame indexed by group key. The pattern is general enough
+that custom functions slot in via `.agg(my_func)` or `.agg(named=('col', func))`.
+Why lazy: `df.groupby('dept')` returns a DataFrameGroupBy object that has only
+computed the partition mapping — it has NOT run any aggregations yet. Actual work
+happens when you call an aggregation method or `.agg()`. Laziness lets you chain
+multiple aggregations off the same partition (`.agg({'cost': 'sum', 'los': 'mean'})`
+walks each group once, not twice) and explore the partition (`.groups`, `.size()`)
+without paying full aggregation costs. SQL parallel: `GROUP BY` clauses are also
+non-executed until paired with aggregates — the mental model carries.
+
+Q: When would you use `.transform('mean')` instead of `.aggregate('mean')` on a Pandas GroupBy?
+A: `.aggregate('mean')` REDUCES each group to one summary value — output has one
+row per group (n_groups rows total), aligned by group key. `.transform('mean')`
+BROADCASTS each group's summary back to one value per ORIGINAL row — output has
+exactly the same shape as the source DataFrame, with each row receiving its own
+group's mean. So `.transform` is what you reach for in patterns like "subtract
+each row's department mean from its LOS":
+`df['los'] - df.groupby('dept')['los'].transform('mean')` gives per-row
+deviations. You couldn't do this with `.aggregate` directly — you'd need a merge
+step. The signature distinction in one line: aggregate reduces (n_groups out),
+transform broadcasts (n_rows out). SQL parallel: aggregate is `GROUP BY ...
+SELECT AGG()`; transform is a window function `AVG(...) OVER (PARTITION BY ...)`.

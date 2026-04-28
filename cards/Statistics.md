@@ -91,3 +91,72 @@ numeric dtype — but the dtype tells you nothing about whether the operation is
 meaningful. Whether arithmetic makes sense is a *domain* property (measurement
 scale), not a Python type property. Always classify columns by measurement scale
 before letting any aggregation run on them.
+
+<!-- Bite 3: Aggregation & Summary Statistics — 2026-04-28 -->
+
+Q: What does the gap between mean and median tell you about a distribution, and why?
+A: Mean > median → right-skewed (long right tail pulls the mean up). Mean < median
+→ left-skewed (long left tail pulls the mean down). Mean ≈ median → roughly
+symmetric. Mechanism: every observation contributes its FULL VALUE to the mean
+($\bar{x} = \frac{1}{n}\sum x_i$) but only its RANK to the median (the middle value
+when sorted, regardless of magnitude). So an extreme outlier shifts the mean
+dramatically while moving the median by at most one rank. In healthcare LOS data,
+right-skewed by ICU patients staying weeks, the mean often exceeds the median by
+several days — using mean alone misrepresents the typical patient's experience.
+Practical rule: report median for skewed continuous data; mean only when symmetry
+is plausible or when you genuinely want every observation weighted by magnitude.
+
+Q: When is the trimmed mean preferable to either the plain mean or the median?
+A: When you want SOME outlier resistance without throwing away all magnitude
+information. The trimmed mean drops the top and bottom $\alpha\%$ of values then
+averages the remaining middle — a 10% trim removes the lowest and highest 10%.
+It sits between the mean (uses every value, sensitive to tails) and the median
+(uses only the rank-middle, throws away magnitude entirely). Useful when: lab
+measurements have occasional sensor errors you want survived but not dominant; LOS
+data has a few extreme stays that distort the mean while the median throws away too
+much information about typical-but-non-median patients. Trade-off: $\alpha$ is
+discretional — report it explicitly. SciPy: `scipy.stats.trim_mean(data, 0.1)`.
+Caveat: with very small samples, even small $\alpha$ can throw away meaningful
+structure, so use sparingly below $n \approx 30$.
+
+Q: For right-skewed data, why does standard deviation typically OVERSTATE the spread compared to IQR, and which is more honest?
+A: Standard deviation squares each deviation from the mean
+($s = \sqrt{\frac{1}{n-1}\sum (x_i - \bar{x})^2}$). Squaring amplifies large
+deviations: a single observation ten times further from the mean contributes 100×
+more to $s^2$ than one at typical distance. Outliers therefore dominate. IQR
+($Q_3 - Q_1$, the gap between 75th and 25th percentiles) is robustly anchored to
+ranks — immune to anything in the upper or lower 25% of values. For right-skewed
+healthcare data (LOS, cost), $s$ inflates because of the long right tail while
+IQR honestly describes the bulk-of-data spread. Empirical rule check: for true
+normal data, ~68% of points fall within $\bar{x} \pm s$ — but for skewed data this
+can climb to 89%+ (most data sits on one side of the mean), revealing $s$ no longer
+means what the empirical rule promises. When the rule fails, IQR or percentile
+pairs (5th/95th) tell the truer story.
+
+Q: Why are five percentiles (5th, 25th, 50th, 75th, 95th) often more informative than mean and standard deviation?
+A: Two summary numbers commit to a model — the mean assumes magnitudes matter
+equally, the standard deviation assumes deviations should be squared. Five
+percentiles don't commit: they describe shape directly. The 5th–95th gap shows
+the typical range; the 25th–75th (IQR) shows the bulk; the median (50th) anchors
+location; gaps between the 50th and tails reveal skewness (50th-to-95th much
+bigger than 5th-to-50th means right-skewed). This is why box plots dominate
+medical and clinical statistics — they show all five at a glance. Reporting
+convention for clinical reference ranges: 5th–95th is the "normal range"; values
+outside get flagged. Trade-off: each percentile is one rank position with no
+aggregation across observations, so for $n < 30$ they can be noisy; mean/std with
+their full-sample averaging are more stable for tiny samples.
+
+Q: How do $\bar{x}$ vs $\mu$, $s^2$ vs $\sigma^2$, $s$ vs $\sigma$ differ — and why does the sample variance use $n-1$ instead of $n$?
+A: Greek letters denote *population* parameters (true, usually unknown): $\mu$
+population mean, $\sigma^2$ variance, $\sigma$ std, $\rho$ correlation. Latin
+letters with bar or just lowercase denote *sample* estimates computed from data:
+$\bar{x}$ sample mean, $s^2$ sample variance, $s$ sample std, $r$ sample
+correlation. The convention is universal — confusion costs a layer of meaning
+when reading any paper. The $n-1$ in $s^2 = \frac{1}{n-1}\sum_i (x_i - \bar{x})^2$
+(Bessel's correction) compensates for $\bar{x}$ being itself estimated from the
+same data: using $\bar{x}$ instead of the true $\mu$ artificially shrinks
+deviations, so dividing by $n$ underestimates the population variance. Dividing
+by $n-1$ — the "degrees of freedom" — corrects this bias. NumPy default
+`np.var(x)` uses $n$ (`ddof=0`); pass `ddof=1` for sample variance. Pandas
+`.var()` defaults to `ddof=1` — opposite of NumPy. This sign-flip default is one
+of the most quietly destructive bugs in stats code; always check.
