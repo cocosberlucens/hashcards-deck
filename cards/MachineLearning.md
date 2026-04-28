@@ -68,3 +68,19 @@ structure. Cost: the feature dimension grows by $k-1$ per encoded column; for
 high-cardinality nominals (ZIP codes, ICD-10 diagnoses with thousands of codes),
 consider embeddings or target encoding instead — they keep the geometric
 faithfulness without the dimension blow-up.
+
+<!-- Bite 2: Matrices & DataFrames — 2026-04-28 -->
+
+Q: Why is the feature matrix conventionally written $\mathbf{X}$ with shape $(n, p)$, and what does each axis carry?
+A: $\mathbf{X}$ is the input data assembled for ML: $n$ observations as rows, $p$
+features as columns — so $\mathbf{X}_{i,:}$ is the $i$-th observation's full
+feature vector. The convention is so ingrained that sklearn's `fit(X, y)` API
+silently enforces it: passing $(p, n)$ instead of $(n, p)$ is a common beginner
+error that produces nonsensical models without crashing. Why this orientation and
+not the transpose? Because we typically have many more observations than features
+($n > p$), and CSV files / SQL queries naturally produce one row per record. Two
+operational consequences: aggregations along axis=0 (down rows) compute per-feature
+statistics — column means $\bar{\mathbf{x}}$, column stds — exactly what you want
+for normalization; pairwise distances between observations are rows-vs-rows. The
+$\mathbf{y}$ vector partner has shape $(n,)$ — one target per observation, aligning
+with $\mathbf{X}$ by row index.

@@ -88,6 +88,70 @@ Linear Regression — maximum: reduces data to learned weights, abstract paramet
 unrelated to any single data point.
 The gradient runs from memorization to abstraction.
 
+<!-- Bite 2 — Backfill: 2026-04-28 -->
+
+Q: A matrix can be viewed as a stack of row vectors OR a stack of column vectors — when does each perspective dominate?
+A: ML typically thinks ROW-WISE: each row of $\mathbf{X}$ is one observation
+(a patient), columns are features. So $\mathbf{X}_{i,:}$ is "patient $i$'s feature
+vector" and operations like cosine similarity between rows answer "which patients
+are similar?" Linear algebra typically thinks COLUMN-WISE: each column is a vector
+in some space, and matrix operations transform whole spaces. The column space of
+$\mathbf{X}$ — span of $\mathbf{X}_{:,j}$ — is the set of all linear combinations
+expressible by mixing features, central to regression and PCA. The two perspectives
+describe the SAME matrix; switching between them is a deliberate move. When sklearn
+complains "expected 2D array, got 1D" it's asking you to commit to "$n$ rows, not
+one row": the column-vs-row distinction surfacing through API design.
+
+Q: What makes the identity matrix $\mathbf{I}$ structurally special, beyond "ones on the diagonal, zeros elsewhere"?
+A: $\mathbf{I}$ is the multiplicative identity for matrix multiplication:
+$\mathbf{I}\mathbf{A} = \mathbf{A}\mathbf{I} = \mathbf{A}$ for any compatible
+$\mathbf{A}$ — exactly analogous to $1 \cdot x = x$ for scalars. Geometrically, it
+is the "do nothing" linear transformation: $\mathbf{I}\mathbf{v} = \mathbf{v}$
+leaves vectors untouched. Notation: $\mathbf{I}_n$ when the size $n \times n$
+matters explicitly. Why it appears everywhere downstream: defining the matrix
+inverse ($\mathbf{A}\mathbf{A}^{-1} = \mathbf{I}$); ridge regression
+regularization ($\mathbf{X}^T\mathbf{X} + \lambda\mathbf{I}$ — adding $\lambda$ to
+the diagonal stabilizes inversion); as the seed for iterative algorithms that
+deform $\mathbf{I}$ into something useful (Newton's method). $\mathbf{I}$ is only
+square — there's no rectangular identity, because both $\mathbf{I}\mathbf{A}$ and
+$\mathbf{A}\mathbf{I}$ must make sense for the same $\mathbf{A}$.
+
+Q: When you compute $\mathbf{A}\mathbf{v}$ with $\mathbf{A}$ of shape $(m, n)$ and $\mathbf{v}$ of length $n$, what does each row of $\mathbf{A}$ represent?
+A: Each row of $\mathbf{A}$ is a recipe for ONE output coordinate: row $i$ takes
+the dot product with $\mathbf{v}$ to produce $(\mathbf{A}\mathbf{v})_i$. So an
+$m \times n$ matrix is fundamentally a definition of $m$ scalar functions of $n$
+inputs, packed together. Two examples: a feature-scaling matrix where each row
+picks one input and rescales it; a neural network layer where each row is the
+weight vector of one neuron — its dot product with the input is that neuron's
+pre-activation output. This is the bridge from "matrix as data container" (Bite 1's
+row-as-patient) to "matrix as transformation": $m$ neurons stacked as rows, each
+computing its own weighted sum of inputs in parallel. The same $\mathbf{A}\mathbf{v}$
+syntax does both jobs depending on what you put in $\mathbf{A}$.
+
+Q: Why does $\boldsymbol{\Sigma} = \frac{1}{n-1}\mathbf{X}_c^T \mathbf{X}_c$ produce the covariance matrix, and why is it always symmetric?
+A: With $\mathbf{X}_c$ being $n$ observations × $p$ mean-centered features,
+element $(i, j)$ of $\mathbf{X}_c^T\mathbf{X}_c$ is the dot product of column $i$
+with column $j$ — that is, $\sum_k (x_{ki} - \bar{x}_i)(x_{kj} - \bar{x}_j)$,
+which is exactly the sum-product needed for sample covariance after dividing by
+$n-1$. Diagonal elements have $i = j$ — column dotted with itself — yielding
+sums of squared deviations $\sum_k (x_{ki} - \bar{x}_i)^2$, the variances.
+Off-diagonals are pairwise covariances. Symmetry is automatic by LIVE EVIL:
+$(\mathbf{X}_c^T\mathbf{X}_c)^T = \mathbf{X}_c^T(\mathbf{X}_c^T)^T = \mathbf{X}_c^T\mathbf{X}_c$.
+It MUST be symmetric because $\text{cov}(i, j) = \text{cov}(j, i)$ — there's no
+directionality in pairwise covariance. This symmetry is what lets covariance
+matrices be eigendecomposed orthogonally, which is the engine of PCA.
+
+Q: What does $a_{ij}$ denote in the context of a matrix $\mathbf{A}$, and what's the row/column ordering convention?
+A: $a_{ij}$ is the scalar element of matrix $\mathbf{A}$ at row $i$, column $j$ —
+first subscript is row, second is column, ALWAYS. Some texts use $A_{ij}$ (capital,
+italic, no bold) for the same thing; the meaning is identical. The (row, col) order
+matches NumPy indexing (`A[i, j]`) and the standard shape convention "$m \times n$
+means $m$ rows by $n$ columns." Caveat: indexing usually starts at 1 in math papers
+($a_{11}$ is top-left) but at 0 in code (`A[0, 0]` is top-left) — a constant
+translation hazard when porting formulas. Generalized: a 3D tensor element is
+$a_{ijk}$. The subscript-vs-superscript distinction matters in tensor calculus
+(covariant vs contravariant indices) but is invisible in plain matrix algebra.
+
 <!-- Bite 3: Aggregation & Summary Statistics — 2025-01-18 -->
 
 Q: Why is the Frobenius norm called "the Euclidean norm for matrices"?
