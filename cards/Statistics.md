@@ -37,3 +37,17 @@ A: When the parametric assumption is wrong — model misspecification. If the tr
 distribution is not Poisson but you fit a Poisson, the structural assumption introduces
 systematic bias that no amount of data can fix. Nonparametric at least converges to
 truth; parametric converges to the best approximation within its assumed family.
+
+<!-- Bite 0.3 — Notation backfill: 2026-04-28 -->
+
+Q: What does the symbol $\rho$ typically denote in statistics, and where does the convention come from?
+A: Lowercase Greek rho is the standard symbol for the Pearson correlation coefficient
+between two variables, ranging in $[-1, +1]$: $+1$ is perfect positive linear
+relationship, $-1$ perfect negative, $0$ no linear relationship. Geometrically it's
+cosine similarity of mean-centered vectors:
+$\rho = \frac{\tilde{\mathbf{a}} \cdot \tilde{\mathbf{b}}}{\|\tilde{\mathbf{a}}\| \|\tilde{\mathbf{b}}\|}$.
+Convention split: $\rho$ usually means the *population* (true) correlation; $r$ means
+the *sample* estimate computed from observed data — the same distinction as $\mu$
+vs $\bar{x}$ for means. Caveat: $\rho$ is overloaded across math — it also denotes
+density (in physics/probability), spectral radius (linear algebra), and the rank
+function (matroid theory). Statistical context disambiguates.

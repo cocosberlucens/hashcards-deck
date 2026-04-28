@@ -134,3 +134,56 @@ different absolute values but identical fluctuation patterns have $\rho = 1$ but
 lower cosine similarity. Pearson captures "co-fluctuation" — linear relationship
 between variables — which is why it's the standard measure of statistical
 correlation; cosine captures "shape similarity" without de-trending.
+
+<!-- Bite 0.3 — Notation backfill: 2026-04-28 -->
+
+Q: What does $\|\mathbf{v}\|$ denote, and why the double bars?
+A: It's the Euclidean (L2) norm — the magnitude or length of vector $\mathbf{v}$,
+computed as $\|\mathbf{v}\| = \sqrt{\sum_i v_i^2}$. This generalizes 2D Pythagorean
+distance to $n$ dimensions. Double bars distinguish vector norm from absolute value
+$|x|$ (a scalar operation). The subscript form $\|\mathbf{v}\|_2$ makes the "2"
+in "L2" explicit, contrasting with $\|\mathbf{v}\|_1 = \sum_i |v_i|$ (Manhattan/L1)
+and $\|\mathbf{v}\|_\infty = \max_i |v_i|$ (Chebyshev). When unsubscripted, $\|\cdot\|$
+defaults to L2 by convention. The matrix analog $\|A\|_F$ (Frobenius) extends the
+same idea to rectangular shapes.
+
+Q: What does the hat in $\hat{\mathbf{v}}$ signify?
+A: $\hat{\mathbf{v}}$ is the unit vector in the direction of $\mathbf{v}$ — same
+direction, magnitude exactly 1. Defined as $\hat{\mathbf{v}} = \mathbf{v}/\|\mathbf{v}\|$,
+the operation strips scale and preserves direction. The hat is the standard visual
+marker for "normalized to length 1" — that's why standard basis vectors are written
+$\hat{\mathbf{i}}, \hat{\mathbf{j}}, \hat{\mathbf{k}}$. Useful for cosine similarity
+($\cos\theta = \hat{\mathbf{a}} \cdot \hat{\mathbf{b}}$) and any context where pattern
+matters more than magnitude. Caveat: in statistics, $\hat{\theta}$ instead means
+"estimated value of parameter $\theta$" — same hat, different convention.
+
+Q: What does the centered dot in $\mathbf{a} \cdot \mathbf{b}$ between two bold letters denote?
+A: The dot product (also called inner or scalar product) of two vectors —
+algebraically $\sum_i a_i b_i$, geometrically $\|\mathbf{a}\|\|\mathbf{b}\|\cos\theta$.
+The output is a SCALAR, despite combining two vectors. Distinguish from $2 \cdot 3$
+(plain scalar multiplication — same dot symbol but operands aren't vectors) and from
+$\mathbf{a} \times \mathbf{b}$ (cross product, which returns a vector in 3D). The dot
+product measures alignment: positive when vectors point similarly, zero when
+perpendicular, negative when opposing. Bold typesetting on the operands is the
+visual cue: dot between bold letters = vector dot product.
+
+Q: What does the tilde in $\tilde{\mathbf{v}}$ typically mean in vector/data contexts?
+A: The tilde marks $\tilde{\mathbf{v}} = \mathbf{v} - \bar{v}$ — the mean-centered
+version of $\mathbf{v}$, with each component shifted by the vector's mean so the
+result has mean 0. This is the operation that turns cosine similarity into Pearson
+correlation: $\rho(\mathbf{a},\mathbf{b}) = \cos(\theta_{\tilde{\mathbf{a}},\tilde{\mathbf{b}}})$.
+Caveat: tilde is overloaded across math — it can also mean "approximately"
+($a \approx b$ sometimes written $a \tilde{} b$), "distributed as" in probability
+($X \sim \mathcal{N}$), or "equivalent to" in algebra. Context is mandatory; in
+data/regression contexts, "centering" is the dominant reading.
+
+Q: How do you read $\sum_{i=1}^{n} x_i$, and what do the index, lower limit, and upper limit mean?
+A: "Sum over $i$ from 1 to $n$ of $x_i$." The $\sum$ symbol is uppercase Greek
+sigma; the subscript $i=1$ initializes the dummy index, the superscript $n$ is the
+(inclusive) terminal value, and $i$ takes each integer between. Equivalent to a
+Python `for` loop accumulating into a total. Three conventions to know: (1) the
+index name is arbitrary — $\sum_j, \sum_k$ are interchangeable; (2) when the range
+is unambiguous from context, math papers omit the limits — just $\sum_i x_i$ or
+$\sum x_i$; (3) the upper limit is INCLUSIVE (unlike Python's `range(n)`, which
+stops at $n-1$). Building block of definitions like $\|\mathbf{v}\| = \sqrt{\sum_i v_i^2}$
+and $\mathbf{a} \cdot \mathbf{b} = \sum_i a_i b_i$.
