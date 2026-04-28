@@ -104,3 +104,86 @@ explicitly spells out CDF semantics for clarity in proofs; $P(X = x)$ is
 meaningful only for discrete $X$ (always 0 for continuous). The inverse CDF —
 the percentile/quantile function — is sometimes written $F^{-1}(p)$ or $Q(p)$,
 both meaning "the value $x$ such that $F(x) = p$."
+
+<!-- Detour: ps4cs Ch. 0 Prerequisites — 2026-04-28 -->
+
+Q: What does $|A|$ denote when $A$ is a set, and how does the same symbol overload across mathematics?
+A: For a set $A$, $|A|$ is the cardinality — the number of elements:
+$|\{1, 2, 3\}| = 3$, $|\emptyset| = 0$. The vertical-bar notation overloads:
+$|x|$ for a real number is absolute value; $|z|$ for a complex number is modulus;
+$|A|$ for a square matrix is the determinant; vector magnitude is sometimes
+$|\mathbf{v}|$ but $\|\mathbf{v}\|$ with double bars is the linalg-standard form.
+Context disambiguates: if the operand is a set, cardinality; a number, absolute
+value; a matrix, determinant. Python: `len(A)` for sets and any sized container.
+SQL: `COUNT(DISTINCT col)` is the database equivalent. For infinite sets the
+symbol still works — $|\mathbb{N}| = \aleph_0$, "aleph-naught" — but cardinality
+becomes a more delicate notion (countable vs uncountable infinity).
+
+Q: What do $\cup$, $\cap$, $\setminus$, and $S^c$ each compute, and how are they written in Python?
+A:
+- $A \cup B$ is **union** — elements in $A$ OR $B$ (or both) → Python `A | B`.
+- $A \cap B$ is **intersection** — elements in BOTH $A$ AND $B$ → Python `A & B`.
+- $A \setminus B$ is **set difference** — in $A$ but NOT in $B$ → Python `A - B`.
+T&F use the backslash $\setminus$ rather than the minus sign for clarity, since
+$A - B$ for numbers means subtraction; not all texts agree.
+- $S^c$ is the **complement** of $S$ relative to a universal set $\mathcal{U}$ —
+elements in $\mathcal{U}$ but not in $S$ → Python `U - S`. Variant notation:
+$\bar{S}$ (overline) means the same in some texts, especially probability.
+Mnemonic: $\cup$ looks like a cup holding everything from both; $\cap$ caps off
+the overlap. SQL parallels: `UNION`, `INTERSECT`, `EXCEPT`. Two empty-set
+identities worth remembering: $A \cup \emptyset = A$, $A \cap \emptyset = \emptyset$.
+
+Q: How do you read $\prod_{i=1}^n x_i$, and where does this notation show up beyond pure math?
+A: "Product over $i$ from 1 to $n$ of $x_i$" — uppercase Greek pi, the multiplicative
+analog of $\sum$. Subscript $i=1$ initializes the dummy index, superscript $n$ is
+the (inclusive) upper limit, and $i$ takes each integer between. Equivalent to a
+Python `for` loop accumulating into a running product with initial value 1. Three
+killer applications: maximum likelihood estimation $L(\theta) = \prod_i f(x_i \mid \theta)$
+— the joint likelihood under independence; probability of independent events
+$P(\bigcap_i E_i) = \prod_i P(E_i)$; combinatorial counts like factorials
+$n! = \prod_{i=1}^n i$. The $\log$ trick: in MLE,
+$\log \prod_i f(x_i \mid \theta) = \sum_i \log f(x_i \mid \theta)$ converts a
+product of small densities (which underflows fast in floating-point) into a
+numerically stable sum. NumPy: `np.prod(arr)` evaluates the product directly.
+
+Q: What do De Morgan's laws state for sets, and why are they critical in probability?
+A: Two dual identities about complementation:
+$(A \cup B)^c = A^c \cap B^c$ and $(A \cap B)^c = A^c \cup B^c$. In English: the
+complement of a union is the intersection of complements, and vice versa.
+Operationally: when you see "not ($A$ or $B$)" you can rewrite as
+"(not $A$) and (not $B$)" — the only way an outcome avoids both $A$ and $B$ is to
+avoid each individually. Why critical in probability: events are sets within a
+sample space, so "the patient has neither cardiac nor respiratory diagnosis" is
+$E_{\text{cardiac}}^c \cap E_{\text{resp}}^c = (E_{\text{cardiac}} \cup E_{\text{resp}})^c$.
+The version on the right is often easier to compute because $P(A \cup B)$ has a
+known formula (inclusion-exclusion) and $P(\text{complement}) = 1 - P(\cdot)$.
+De Morgan generalizes to any finite or countable family:
+$(\bigcup_i E_i)^c = \bigcap_i E_i^c$.
+
+Q: Why does $|A \cup B| = |A| + |B| - |A \cap B|$ subtract the intersection, and how does this generalize?
+A: Adding $|A| + |B|$ counts every element in the overlap TWICE — once for being
+in $A$, once for being in $B$. Subtracting $|A \cap B|$ removes one of those
+duplicate counts, leaving each element counted exactly once. SQL parallel:
+`UNION` automatically de-duplicates while `UNION ALL` keeps duplicates — exactly
+the difference between corrected and uncorrected counts. Three-set version:
+$|A \cup B \cup C| = |A| + |B| + |C| - |A \cap B| - |A \cap C| - |B \cap C| + |A \cap B \cap C|$
+— alternating signs by intersection size. The pattern generalizes to $n$ sets:
+$|\bigcup_{i=1}^n A_i| = \sum_{k=1}^n (-1)^{k+1} \sum_{|S|=k} |\bigcap_{i \in S} A_i|$,
+a signed sum over all non-empty intersections. In probability, the same formula
+governs $P(A \cup B \cup C)$ with probabilities replacing cardinalities — the
+algebraic skeleton is identical.
+
+Q: Why is $\sum$ over an empty range defined to equal 0, and $\prod$ over an empty range defined to equal 1?
+A: Each is the accumulator's initial value: a `for`-loop summing into `total = 0`
+returns 0 if the loop runs zero times; a `for`-loop multiplying into
+`product = 1` returns 1 if it runs zero times. The conventions ARE those
+identity values — 0 is the additive identity ($x + 0 = x$), 1 is the
+multiplicative identity ($x \cdot 1 = x$). Why this matters: many formulas have
+natural cases where the range can shrink to empty without breaking. Expected
+value $\mathbb{E}[X] = \sum_k k \cdot p(k)$ for a positive-only random variable —
+terms for $k \le 0$ vanish without special casing because the empty sum returns
+0. Likelihood $L(\theta) = \prod_i f(x_i \mid \theta)$ for an empty dataset gives
+1, the "no information" likelihood that lets prior-times-likelihood reduce
+cleanly to prior. NumPy preserves both conventions: `np.sum([])` returns 0.0,
+`np.prod([])` returns 1.0. The conventions look pedantic until they make a
+formula work in a corner case without an `if` clause.
