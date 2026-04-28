@@ -160,3 +160,65 @@ by $n-1$ — the "degrees of freedom" — corrects this bias. NumPy default
 `np.var(x)` uses $n$ (`ddof=0`); pass `ddof=1` for sample variance. Pandas
 `.var()` defaults to `ddof=1` — opposite of NumPy. This sign-flip default is one
 of the most quietly destructive bugs in stats code; always check.
+
+<!-- Bite 4: Distributions & Visualization — 2026-04-28 -->
+
+Q: How does KDE bandwidth choice mirror the bias-variance tradeoff in machine learning?
+A: KDE places a small "bump" (kernel) at each data point and sums them; bandwidth
+controls each bump's width. SMALL bandwidth → narrow bumps → curve traces every
+data point closely → low bias (faithful to the sample) but high variance (captures
+sampling noise as fake features — visible "wiggle"). LARGE bandwidth → wide bumps
+that smear across many points → low variance (stable across samples) but high
+bias (real features like modes get blurred away). This is identical to ML's
+bias-variance: small training error / low bias = overfit risk; smooth model /
+high bias = underfit risk. Defaults like Scott's rule and Silverman's rule pick
+a bandwidth balancing the two, scaled by sample size and spread. As $n$ grows,
+the optimal bandwidth shrinks (more data supports finer detail). Practical
+heuristic: plot KDE at three bandwidths and trust your eye — the wiggly one is
+overfit, the smooth one is underfit, the middle one is honest.
+
+Q: What are the four core methods exposed by every distribution in `scipy.stats`, and how do they map to probability concepts?
+A: Every distribution object — `norm`, `expon`, `poisson`, `t`, `chi2`, etc. —
+exposes the same four-method API: `rvs(size=n)` generates random samples
+("random variates"); `pdf(x)` evaluates the probability density at $x$ — for
+discrete distributions it's `pmf(k)` instead; `cdf(x)` gives cumulative
+probability $P(X \le x)$; `ppf(p)` is the inverse CDF — given probability $p$,
+returns the $x$ value at which $P(X \le x) = p$ ("percent point function," same
+as the quantile function). Knowing these four lets you do anything: simulate
+(rvs), evaluate density (pdf), compute probabilities (cdf), find percentiles or
+critical values (ppf). Shape and location pass via `loc` (shift) and `scale`
+(stretch) for continuous distributions, with distribution-specific parameters as
+additional positional args (e.g., `expon.pdf(x, scale=1/lam)`). The same API
+across dozens of distributions is the reason scipy.stats is the workhorse for
+parametric work.
+
+Q: When you see a QQ plot's right tail curving UP above the diagonal line, what does it tell you about the data?
+A: The right tail curving up means the data has a HEAVIER (longer) right tail
+than the theoretical distribution — extreme high values are MORE frequent than
+the model predicts. So the data is right-skewed relative to the reference (Normal
+by default). Mirror image: right tail curving DOWN = lighter right tail, extreme
+high values LESS frequent than predicted (rare in real data). Both tails curving
+away from the line in opposite directions = symmetric heavy-tailed (e.g.,
+t-distribution); both curving toward the line = symmetric light-tailed. A bimodal
+distribution shows an S-shape because the empirical CDF flattens between the two
+modes. Mechanism: the QQ plot's $y$-axis is "what value does $p\%$ of your data
+lie below?", $x$-axis is "what value SHOULD $p\%$ lie below if the data followed
+the theoretical distribution?" — gaps between the two reveal exactly how the
+data's shape departs from the assumption.
+
+Q: Why does bootstrap resampling — sampling from your data WITH REPLACEMENT — give a valid estimate of how a statistic varies across samples?
+A: The bootstrap treats your sample as the best available stand-in for the
+population: if you can't draw new samples from the true (unknown) population,
+you draw from the sample you have, with replacement, to mimic the act of sampling
+from the population. Each bootstrap sample is the same size as the original
+($n$ draws) but contains some original observations multiple times and others
+not at all — exactly the variation that would happen if you re-sampled from
+the true population. Computing the statistic on each bootstrap sample (mean,
+median, regression coefficient — anything) builds an empirical sampling
+distribution. From it: the SD of bootstrap estimates approximates the standard
+error; the 2.5th and 97.5th percentiles give a 95% confidence interval. WHY with
+replacement: without replacement, every bootstrap sample would be identical to
+the original, with zero variability — useless. The intuition is the Central
+Limit Theorem in disguise: the bootstrap distribution mirrors the unknown
+sampling distribution, and CLT guarantees both converge to Normal for large $n$
+when the statistic is a mean.

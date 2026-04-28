@@ -151,3 +151,38 @@ an imperative display — but in Marimo it's effectively a no-op with the defaul
 backend, so nothing renders. Convention: build the plot, optionally call
 `fig.tight_layout()`, then make the LAST expression `plt.gca()` or the fig/ax
 variable itself. In OO code, `fig` as the last line is the cleanest form.
+
+<!-- Bite 4: Distributions & Visualization — 2026-04-28 -->
+
+Q: When should you choose `hist2d` vs `hexbin` vs filled KDE contours for visualizing a 2D distribution?
+A: `ax.hist2d(x, y, bins=...)` lays a rectangular grid and counts points per
+cell — fast and intuitive but suffers visible grid artifacts and aliasing when
+bins are coarse. `ax.hexbin(x, y, gridsize=...)` uses hexagonal cells, which
+tile more uniformly than squares (less directional bias) and handle dense
+regions more gracefully — usually visually superior to hist2d at the same
+effective resolution. KDE contours via `gaussian_kde` on a meshgrid + `ax.contourf`
+produce a SMOOTH density estimate with continuous level lines — best for showing
+the underlying shape and modes, but slow for $n > 10\,000$ and sensitive to
+bandwidth. Decision rule: hist2d for raw counts when exact bin boundaries
+matter; hexbin as the default for medium-to-large data; KDE contours for
+small-to-medium data when you want the cleanest view of shape (often layered
+with a low-alpha scatter for ground truth). All three pair with `plt.colorbar()`
+to read density values quantitatively.
+
+Q: What does `plt.GridSpec` let you do that plain `plt.subplots` cannot, and what's the canonical "margin plot" pattern?
+A: `plt.subplots(rows, cols)` gives a uniform grid where every cell has the same
+size and aspect — fine for symmetric layouts, awkward for "main plot + helpers"
+arrangements. `plt.GridSpec(rows, cols)` lets each Axes span MULTIPLE cells via
+slicing, so you can build asymmetric layouts: a big main plot with small marginal
+plots glued to its sides. Canonical margin plot for bivariate data:
+```python
+gs = plt.GridSpec(4, 4)
+ax_main = fig.add_subplot(gs[1:, :-1])               # 3x3 lower-left, the scatter
+ax_top  = fig.add_subplot(gs[0, :-1], sharex=ax_main)   # top strip, x-marginal
+ax_right = fig.add_subplot(gs[1:, -1], sharey=ax_main)  # right strip, y-marginal
+```
+The `sharex/sharey` calls keep marginal axes aligned with the main scatter when
+panning or zooming. `plt.setp(ax_top.get_xticklabels(), visible=False)` hides
+redundant tick labels. The pattern is so standard that seaborn's `jointplot`
+encapsulates it as a one-liner; understanding GridSpec lets you build variants
+seaborn doesn't.
